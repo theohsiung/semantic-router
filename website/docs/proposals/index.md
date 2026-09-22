@@ -51,7 +51,7 @@ different client and transport protocols.
 
 | Proposal | Created | Status | Scope |
 | --- | --- | --- | --- |
-| [Capability-Scoped Signal Extraction](./capability-scoped-signal-extraction) | 2026-09-22 | Proposal | Named capabilities on a deployment so several signals read one model, plus schema-constrained decoding for chat classifiers. |
+| [Capability-Scoped Signal Extraction](./capability-scoped-signal-extraction) | 2026-09-22 | Proposal | One deployment answering several signals, spelled the same way for models loaded in-process or reached over HTTP. |
 | [Open Intelligence Index 1.0 and Unified Model Arena](./open-intelligence-index-and-model-arena) | 2026-09-09 | Implemented | Defines the six open core benchmarks, complete-case index, physical/virtual ranking, operator evidence, routing objectives, and benchmark-version migration. |
 | [Unified Model Catalog and Evaluation Index](./unified-model-catalog-and-evaluation-index) | 2026-09-04 | Implemented | Unifies provider, protocol, model, reasoning, presentation, Day-0, and benchmark-comparison metadata. |
 | [Unified Config Contract v0.3](./unified-config-contract-v0-3) | 2026-03-17 | Implemented | One configuration contract across authoring and deployment surfaces. |
