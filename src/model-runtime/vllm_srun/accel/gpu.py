@@ -204,10 +204,20 @@ def _wrap_conv(fn: Any) -> Any:
 
 
 def _wrap_varlen(fn: Any) -> Any:
-    """PyTorch's variable-length flash attention over packed rows, non-causal, keys with fewer heads in-kernel."""
+    """PyTorch's variable-length flash attention over packed rows, non-causal, keys with fewer heads in-kernel.
+
+    PyTorch 2.11's ``varlen_attn`` takes no ``enable_gqa``: there the keys and
+    values repeat each head ``groups`` times, which hands every query head the
+    key and value heads the in-kernel grouping reads.
+    """
+    grouped = "enable_gqa" in inspect.signature(fn).parameters
 
     def attend(query, key, value, packed, *, scale, groups):
         cu = packed.cu_seqlens_int32
+        options = {"enable_gqa": groups > 1} if grouped else {}
+        if groups > 1 and not grouped:
+            key = key.repeat_interleave(groups, dim=-2)
+            value = value.repeat_interleave(groups, dim=-2)
         return fn(
             query,
             key,
@@ -217,7 +227,7 @@ def _wrap_varlen(fn: Any) -> Any:
             packed.max_length,
             packed.max_length,
             scale=scale,
-            enable_gqa=groups > 1,
+            **options,
         )
 
     return attend
