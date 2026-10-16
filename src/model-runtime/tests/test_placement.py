@@ -144,6 +144,25 @@ def test_a_cpu_without_lapack_refuses_models_that_require_it(monkeypatch, lapack
     assert "the router's CPU image" in message and "a GPU device" in message
 
 
+def test_a_wildcard_requirement_applies_to_accelerators_without_their_own():
+    wildcard = replace(SPEC, requires={"*": ("no-device-offers-this",)})
+    with pytest.raises(UnsupportedDeviceError, match="lacks no-device-offers-this"):
+        place(wildcard, "cpu", 1000)
+    own = replace(SPEC, requires={"*": ("no-device-offers-this",), "cpu": ()})
+    assert place(own, "cpu", 1000).device.accelerator == "cpu"
+
+
+def test_nvfp4_weights_require_fp4_tensor_cores_everywhere():
+    from vllm_srun.quantization import NVFP4, QuantizedWeights
+
+    nvfp4 = QuantizedWeights(NVFP4, targets=("Linear",), ignore=(), group_size=16)
+    assert BackboneSpec("qwen3_5_text", {}, (), quantized=nvfp4).requires == {
+        "*": ("nvfp4",),
+        "cpu": ("lapack", "nvfp4"),
+    }
+    assert BackboneSpec("qwen3", {}, (), quantized=nvfp4).requires == {"*": ("nvfp4",)}
+
+
 def test_a_pytorch_without_the_private_lapack_flag_still_places_on_the_cpu(
     monkeypatch,
 ):

@@ -137,7 +137,7 @@ def place(
         devices = accelerator.devices()
         if index is not None:
             devices = [d for d in devices if d.index == index]
-        required = spec.requires.get(name, ())
+        required = spec.requires.get(name, spec.requires.get("*", ()))
         for info in devices:
             if required:
                 offered = accelerator.capabilities(info)

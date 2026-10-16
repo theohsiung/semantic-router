@@ -205,7 +205,7 @@ class BackboneSpec:
 
     ``branches`` names extra layer stacks that share the embedding; an encoder
     batch selects one with ``EncoderBatch.branch``. ``quantized`` names the linear
-    layers the checkpoint holds as int4 or FP8 weights (``quantization.py``).
+    layers the checkpoint holds as int4, FP8 or NVFP4 weights (``quantization.py``).
     """
 
     model_type: str
@@ -221,8 +221,19 @@ class BackboneSpec:
         """The device capabilities the architecture needs, per accelerator (``ModelSpec.requires``).
 
         Gated DeltaNet layers (Qwen3.5) solve triangular systems; on a CPU that needs LAPACK.
+        NVFP4 weights need FP4 matrix units on every accelerator (``"*"``).
         """
-        return {"cpu": ("lapack",)} if self.model_type == "qwen3_5_text" else {}
+        from ..quantization import NVFP4, NVFP4_CAPABILITY
+
+        needs: dict[str, tuple[str, ...]] = (
+            {"cpu": ("lapack",)} if self.model_type == "qwen3_5_text" else {}
+        )
+        if self.quantized is not None and self.quantized.scheme == NVFP4:
+            needs = {
+                name: (*capabilities, NVFP4_CAPABILITY)
+                for name, capabilities in {"*": (), **needs}.items()
+            }
+        return needs
 
 
 @dataclass(frozen=True)
@@ -242,7 +253,8 @@ class ModelSpec:
     run; the engine may shorten it beside other engines' CPU models. ``requires``
     names, per accelerator, the capabilities its devices must report
     (``Accelerator.capabilities``) to serve the model; placement refuses a
-    device that lacks one. ``towers`` are a multimodal model's other
+    device that lacks one, and ``"*"`` names those of every accelerator
+    without an entry of its own. ``towers`` are a multimodal model's other
     backbones by name (an image or audio encoder next to the text backbone),
     each its own architecture and weights; an encoder batch runs one with
     ``EncoderBatch.tower``.
